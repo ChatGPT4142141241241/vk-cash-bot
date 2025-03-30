@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Крутани и Забери</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1a1a2e;
+      color: #fff;
+      text-align: center;
+    }
+    .overlay {
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 40px;
+      margin-bottom: 30px;
+    }
+    #wheel-container {
+      margin: 0 auto;
+      width: 320px;
+      height: 320px;
+    }
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 10px solid #FFD700;
+      background: conic-gradient(
+        #e74c3c 0deg 90deg,
+        #f1c40f 90deg 180deg,
+        #2ecc71 180deg 270deg,
+        #3498db 270deg 360deg
+      );
+      transition: transform 5s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    button {
+      margin-top: 30px;
+      font-size: 20px;
+      padding: 10px 30px;
+      background-color: #FFD700;
+      border: none;
+      color: black;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .result {
+      font-size: 28px;
+      margin-top: 40px;
+      font-weight: bold;
+    }
+    .info-buttons {
+      margin-top: 30px;
+    }
+    .info-buttons button {
+      margin: 5px;
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #modalContent {
+      background: #222;
+      padding: 30px;
+      max-width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      border-radius: 10px;
+      text-align: left;
+    }
+    #modalContent h2 {
+      text-align: center;
+      margin-top: 0;
+    }
+    #modalClose {
+      margin-top: 20px;
+      background-color: #FFD700;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+<div class="overlay">
+  <h1>Крутани и Забери</h1>
+  <div id="wheel-container">
+    <div id="wheel"></div>
+  </div>
+
+  <button id="spinBtn" onclick="spin()">Крутить</button>
+  <div class="result" id="result"></div>
+  <button id="payBtn" onclick="unlock()" style="display:none;">Попробовать снова за 50₽</button>
+
+  <div class="info-buttons">
+    <button onclick="showModal('rules')">📜 Правила участия</button>
+    <button onclick="showModal('faq')">❓ FAQ</button>
+    <button onclick="showModal('policy')">📋 Политика</button>
+    <button onclick="showModal('share')">📲 Поделиться</button>
+  </div>
+</div>
+
+<div id="modal">
+  <div id="modalContent">
+    <h2 id="modalTitle"></h2>
+    <div id="modalText"></div>
+    <button id="modalClose" onclick="closeModal()">Закрыть</button>
+  </div>
+</div>
+
+<script>
+  function showModal(type) {
+    const modal = document.getElementById("modal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalText = document.getElementById("modalText");
+    const content = {
+      rules: [
+        "1. Один бесплатный запуск.",
+        "2. За повтор платишь.",
+        "3. Всё рандом.",
+        "4. Выплаты вручную.",
+        "5. Взлом — бан.",
+        "6. Правила могут меняться."
+      ],
+      faq: [
+        "<b>Как играть?</b><br>Крути колесо, жди результат.",
+        "<b>Повтор?</b><br>После оплаты.",
+        "<b>Как получить выигрыш?</b><br>Отправь код в Telegram.",
+        "<b>Бесплатно?</b><br>Да, только первый раз.",
+        "<b>Гарантия?</b><br>Нет. Всё по-честному и случайно."
+      ],
+      policy: [
+        "1. Это развлечение.",
+        "2. Ничего не гарантируем.",
+        "3. Ты сам принимаешь решение.",
+        "4. Выплаты проверяются.",
+        "5. Нет возврата."
+      ],
+      share: [
+        "Приглашай друзей!",
+        "Ссылка:<br><b>https://chatgpt4142141241241.github.io/vk-cash-test/</b>"
+      ]
+    };
+    modalTitle.innerText = {
+      rules: "Правила участия",
+      faq: "FAQ",
+      policy: "Политика",
+      share: "Поделиться"
+    }[type];
+    modalText.innerHTML = "<ul><li>" + content[type].join("</li><li>") + "</li></ul>";
+    modal.style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("modal").style.display = "none";
+  }
+
+  let spinning = false;
+  let currentRotation = 0;
+  let canSpin = true;
+  let firstSpin = true;
+
+  function getPrize() {
+    if (firstSpin) return 50;
+    const rand = Math.random() * 100;
+    if (rand < 10) return 500;
+    if (rand < 30) return 100;
+    if (rand < 63) return 50;
+    return 0;
+  }
+
+  function generateCode(prize) {
+    const timestamp = Date.now();
+    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `CODE-${prize}-${timestamp}-${randomPart}`;
+  }
+
+  function spin() {
+    if (spinning || !canSpin) return;
+
+    spinning = true;
+    document.getElementById("spinBtn").disabled = true;
+    document.getElementById("result").innerHTML = "Крутим...";
+
+    const prize = getPrize();
+    const sector = prize === 0 ? 0 : prize === 50 ? 1 : prize === 100 ? 2 : 3;
+    const stopAngle = 360 * 5 + sector * 90 + 45;
+    currentRotation += stopAngle;
+
+    document.getElementById("wheel").style.transform = `rotate(${currentRotation}deg)`;
+
+    setTimeout(() => {
+      if (prize > 0) {
+        const code = generateCode(prize);
+        document.getElementById("result").innerHTML = `🎉 Ты выиграл ${prize}₽!<br>💬 Секретный код: <b>${code}</b>`;
+      } else {
+        document.getElementById("result").innerHTML = "😞 Увы, не повезло.";
+      }
+      spinning = false;
+      canSpin = false;
+      document.getElementById("payBtn").style.display = "inline-block";
+      firstSpin = false;
+    }, 5000);
+  }
+
+  function unlock() {
+    canSpin = true;
+    document.getElementById("spinBtn").disabled = false;
+    document.getElementById("payBtn").style.display = "none";
+  }
+</script>
+</body>
+</html>
