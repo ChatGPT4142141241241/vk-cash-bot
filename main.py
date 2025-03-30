@@ -6,7 +6,6 @@ import time
 
 API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
 ADMIN_ID = 6180147473
-
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
 
@@ -20,34 +19,34 @@ def validate_code(code, expected_amount):
     return now - timestamp < 5 * 60 * 1000
 
 @bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.reply_to(
-        message,
-        "Привет! 🤑 Для заявки на выплату отправь сумму и код, например:\n50 CODE-50-1711769000348-KD8Q"
-    )
+def start(message):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add("🚀 Запустить")
+    bot.send_message(message.chat.id, "Привет! Нажми '🚀 Запустить', чтобы начать.", reply_markup=markup)
+
+@bot.message_handler(func=lambda message: message.text == "🚀 Запустить")
+def launch(message):
+    bot.send_message(message.chat.id, "Отправь сумму и код: Пример:
+50 CODE-50-1711769000348-KD8Q")
 
 @bot.message_handler(func=lambda m: True)
 def handle_submission(message):
     text = message.text.strip()
     parts = text.split()
-
     if len(parts) != 2:
-        bot.reply_to(message, "❌ Формат неверный. Пример: 50 CODE-50-1711769000348-KD8Q")
+        bot.reply_to(message, "❌ Пример: 50 CODE-50-1711769000348-KD8Q")
         return
-
     amount, code = parts
     if not amount.isdigit():
         bot.reply_to(message, "❌ Сумма должна быть числом.")
         return
-
     if not validate_code(code, amount):
         bot.reply_to(message, "❌ Неверный или просроченный код.")
         return
-
     user = message.from_user
-    result = f"💰 Подтвержденная заявка:\n👤 Пользователь: @{user.username or user.first_name}\n🆔 ID: {user.id}\n📦 Сумма: {amount}₽\n🔐 Код: {code}"
-    bot.send_message(ADMIN_ID, result)
-    bot.reply_to(message, "✅ Код подтвержден! Заявка отправлена, ожидай выплату.")
+    msg = f"💰 Подтвержденная заявка:\nПользователь: @{user.username or user.first_name}\nID: {user.id}\nСумма: {amount}₽\nКод: {code}"
+    bot.send_message(ADMIN_ID, msg)
+    bot.reply_to(message, "✅ Код подтверждён. Ожидай выплату.")
 
 @app.route('/', methods=['GET', 'POST'])
 def webhook():
