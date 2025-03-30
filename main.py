@@ -1,60 +1,34 @@
 
 import telebot
 from flask import Flask, request
-import re
-import time
 
-API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
-ADMIN_ID = 6180147473
-bot = telebot.TeleBot(API_TOKEN)
+TOKEN = "ТВОЙ_ТОКЕН_БОТА"
+bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-def validate_code(code, expected_amount):
-    pattern = fr'^CODE-{expected_amount}-(\d+)-[A-Z0-9]{{4}}$'
-    match = re.match(pattern, code)
-    if not match:
-        return False
-    timestamp = int(match.group(1))
-    now = int(time.time() * 1000)
-    return now - timestamp < 5 * 60 * 1000
+@app.route('/', methods=['GET', 'HEAD'])
+def index():
+    return 'Bot is running!'
+
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return '', 200
 
 @bot.message_handler(commands=['start'])
-def start(message):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add("🚀 Запустить")
-    bot.send_message(message.chat.id, "Привет! Нажми '🚀 Запустить', чтобы начать.", reply_markup=markup)
-
-@bot.message_handler(func=lambda message: message.text == "🚀 Запустить")
-def launch(message):
-    bot.send_message(message.chat.id, "Отправь сумму и код: Пример:
-50 CODE-50-1711769000348-KD8Q")
+def send_welcome(message):
+    bot.send_message(message.chat.id, "Привет! 😎 Для заявки на выплату отправь сумму и код, например:\n50 CODE-50-1711769000348-KD8Q")
 
 @bot.message_handler(func=lambda m: True)
-def handle_submission(message):
-    text = message.text.strip()
-    parts = text.split()
-    if len(parts) != 2:
-        bot.reply_to(message, "❌ Пример: 50 CODE-50-1711769000348-KD8Q")
-        return
-    amount, code = parts
-    if not amount.isdigit():
-        bot.reply_to(message, "❌ Сумма должна быть числом.")
-        return
-    if not validate_code(code, amount):
-        bot.reply_to(message, "❌ Неверный или просроченный код.")
-        return
-    user = message.from_user
-    msg = f"💰 Подтвержденная заявка:\nПользователь: @{user.username or user.first_name}\nID: {user.id}\nСумма: {amount}₽\nКод: {code}"
-    bot.send_message(ADMIN_ID, msg)
-    bot.reply_to(message, "✅ Код подтверждён. Ожидай выплату.")
-
-@app.route('/', methods=['GET', 'POST'])
-def webhook():
-    if request.method == 'POST':
-        update = telebot.types.Update.de_json(request.stream.read().decode('utf-8'))
-        bot.process_new_updates([update])
-        return 'OK', 200
-    return 'Bot is running!', 200
+def handle_message(message):
+    bot.reply_to(message, "⛔️ Код не подтвержден или устарел.")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    import os
+    import sys
+    port = int(os.environ.get("PORT", 8080))
+    bot.remove_webhook()
+    bot.set_webhook(url=f"https://vk-cash-bot.onrender.com/{TOKEN}")
+    app.run(host="0.0.0.0", port=port)
