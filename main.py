@@ -29,8 +29,7 @@ def send_start(message):
 
 @bot.callback_query_handler(func=lambda call: call.data == "launch")
 def handle_launch(call):
-    bot.send_message(call.message.chat.id, "🤑 Введите сумму и код, пример:
-50 CODE-50-1711769000348-KD8Q")
+    bot.send_message(call.message.chat.id, "🤑 Введите сумму и код, пример:\n50 CODE-50-1711769000348-KD8Q")
 
 @bot.message_handler(func=lambda m: True)
 def handle_message(message):
@@ -49,12 +48,7 @@ def handle_message(message):
         bot.reply_to(message, "✅ Код подтвержден! Теперь отправь свои реквизиты для выплаты:")
     elif message.from_user.id in user_states:
         state = user_states.pop(message.from_user.id)
-        payout_info = f"💰 Новая заявка:
-👤 @{message.from_user.username or message.from_user.first_name}
-🆔 {message.from_user.id}
-📦 Сумма: {state['amount']}₽
-🔐 Код: {state['code']}
-💳 Реквизиты: {text}"
+        payout_info = f"💰 Новая заявка:\n👤 @{message.from_user.username or message.from_user.first_name}\n🆔 {message.from_user.id}\n📦 Сумма: {state['amount']}₽\n🔐 Код: {state['code']}\n💳 Реквизиты: {text}"
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{message.from_user.id}"))
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
