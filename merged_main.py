@@ -206,11 +206,11 @@ def get_leaderboard(top_n=5):
 @bot.message_handler(commands=['leaderboard'])
 def leaderboard(message):
     top = get_leaderboard()
-    text = "🏆 Топ участников по выигрышам:
-"
+    text = "🏆 Топ участников по выигрышам:\n"
+
     for i, (uid, amount) in enumerate(top, 1):
-        text += f"{i}. ID {uid} — {amount}₽
-"
+        text += f"{i}. ID {uid} — {amount}₽\n"
+
     bot.send_message(message.chat.id, text)
 
 @bot.message_handler(commands=['shop'])
@@ -221,8 +221,8 @@ def shop(message):
     markup = InlineKeyboardMarkup()
     if user_coins >= 10:
         markup.add(InlineKeyboardButton("🎰 Повторная попытка (10 VKC)", callback_data="buy_retry"))
-    bot.send_message(message.chat.id, f"🛒 Магазин VK Coins:
-У тебя {user_coins} VKC", reply_markup=markup)
+    bot.send_message(message.chat.id, f"🛒 Магазин VK Coins:\nУ тебя {user_coins} VKC", reply_markup=markup)
+
 
 @bot.callback_query_handler(func=lambda call: call.data == "buy_retry")
 def buy_retry(call):
