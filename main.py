@@ -76,9 +76,27 @@ def handle_message(message):
     uid = message.from_user.id
     if uid in user_states:
         state = user_states.pop(uid)
-        payout_info = f"💰 Новая заявка:\n👤 @{message.from_user.username or message.from_user.first_name}\n🆔 {uid}\n📦 Сумма: {state['amount']}₽\n🔐 Код: {state['code']}\n💳 Реквизиты: {message.text}"
+        code = state['code']
+        with open(CODES_FILE, "r") as f:
+            codes = json.load(f)
+        if code not in codes:
+            bot.send_message(message.chat.id, "❌ Код не найден. Попробуйте сначала.")
+            return
+        if codes[code]["user_id"] != uid:
+            bot.send_message(message.chat.id, "❌ Этот код не принадлежит вам.")
+            return
+        if codes[code]["used"]:
+            bot.send_message(message.chat.id, "⚠️ Этот код уже использован.")
+            return
+
+        payout_info = f"💰 Новая заявка:
+👤 @{message.from_user.username or message.from_user.first_name}
+🆔 {uid}
+📦 Сумма: {state['amount']}₽
+🔐 Код: {code}
+💳 Реквизиты: {message.text}"
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{uid}"))
+        markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{uid}_{code}"))
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
         bot.reply_to(message, "✅ Заявка отправлена! Ожидай выплату.")
     else:
@@ -86,7 +104,15 @@ def handle_message(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("pay_"))
 def handle_payment(call):
-    user_id = call.data.split("_")[1]
+    parts = call.data.split("_")
+    user_id = parts[1]
+    code = "_".join(parts[2:])
+    with open(CODES_FILE, "r") as f:
+        codes = json.load(f)
+    if code in codes:
+        codes[code]["used"] = True
+        with open(CODES_FILE, "w") as f:
+            json.dump(codes, f, indent=4)
     bot.send_message(user_id, "💸 Выплата отправлена! Спасибо за участие 🙌")
     bot.answer_callback_query(call.id, "Выплата отмечена!")
 
@@ -109,3 +135,110 @@ def webhook():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
+
+
+
+@bot.message_handler(commands=['admin'])
+def admin_panel(message):
+    if message.from_user.id != ADMIN_ID:
+        bot.reply_to(message, "⛔ Доступ запрещён.")
+        return
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("📦 Список кодов", callback_data="admin_codes"),
+        InlineKeyboardButton("💾 Скачать codes.json", callback_data="admin_download"),
+        InlineKeyboardButton("📊 Статистика", callback_data="admin_stats")
+    )
+    bot.send_message(message.chat.id, "👑 Админ-панель:", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("admin_"))
+def handle_admin_actions(call):
+    if call.from_user.id != ADMIN_ID:
+        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
+        return
+
+    if call.data == "admin_codes":
+        with open(CODES_FILE, "r") as f:
+            codes = json.load(f)
+        text = "\n".join([f"{code} — {data['amount']}₽ — {'✅' if data['used'] else '🕓'}" for code, data in codes.items()])
+        bot.send_message(call.message.chat.id, f"📦 Активные коды:\n{text[:4000]}")
+
+    elif call.data == "admin_download":
+        with open(CODES_FILE, "rb") as f:
+            bot.send_document(call.message.chat.id, f)
+
+    elif call.data == "admin_stats":
+        with open(CODES_FILE, "r") as f:
+            codes = json.load(f)
+        total = len(codes)
+        used = sum(1 for x in codes.values() if x['used'])
+        pending = total - used
+        bot.send_message(call.message.chat.id, f"📊 Статистика:\nВсего кодов: {total}\nВыплачено: {used}\nОжидают: {pending}")
+
+
+
+VKCOIN_FILE = "vkcoins.json"
+if not os.path.exists(VKCOIN_FILE):
+    with open(VKCOIN_FILE, "w") as f:
+        json.dump({}, f)
+
+def add_vkcoins(user_id, amount):
+    with open(VKCOIN_FILE, "r") as f:
+        coins = json.load(f)
+    coins[str(user_id)] = coins.get(str(user_id), 0) + amount
+    with open(VKCOIN_FILE, "w") as f:
+        json.dump(coins, f, indent=4)
+
+def get_leaderboard(top_n=5):
+    with open(CODES_FILE, "r") as f:
+        codes = json.load(f)
+    stats = {}
+    for code, data in codes.items():
+        if data["used"]:
+            uid = data["user_id"]
+            stats[uid] = stats.get(uid, 0) + data["amount"]
+    sorted_stats = sorted(stats.items(), key=lambda x: x[1], reverse=True)
+    return sorted_stats[:top_n]
+
+@bot.message_handler(commands=['leaderboard'])
+def leaderboard(message):
+    top = get_leaderboard()
+    text = "🏆 Топ участников по выигрышам:
+"
+    for i, (uid, amount) in enumerate(top, 1):
+        text += f"{i}. ID {uid} — {amount}₽
+"
+    bot.send_message(message.chat.id, text)
+
+@bot.message_handler(commands=['shop'])
+def shop(message):
+    with open(VKCOIN_FILE, "r") as f:
+        coins = json.load(f)
+    user_coins = coins.get(str(message.from_user.id), 0)
+    markup = InlineKeyboardMarkup()
+    if user_coins >= 10:
+        markup.add(InlineKeyboardButton("🎰 Повторная попытка (10 VKC)", callback_data="buy_retry"))
+    bot.send_message(message.chat.id, f"🛒 Магазин VK Coins:
+У тебя {user_coins} VKC", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "buy_retry")
+def buy_retry(call):
+    uid = call.from_user.id
+    with open(VKCOIN_FILE, "r") as f:
+        coins = json.load(f)
+    if coins.get(str(uid), 0) >= 10:
+        coins[str(uid)] -= 10
+        first_spin_done[uid] = False  # сброс попытки
+        with open(VKCOIN_FILE, "w") as f:
+            json.dump(coins, f, indent=4)
+        bot.send_message(uid, "✅ Повторная попытка активирована! Крути снова.")
+    else:
+        bot.send_message(uid, "❌ Недостаточно VK Coins.")
+
+# Пасхалка — случайно срабатывает 1 из 50 сообщений
+import random as rnd
+@bot.message_handler(func=lambda m: True)
+def handle_all(m):
+    if rnd.randint(1, 50) == 1:
+        bot.send_message(m.chat.id, "👻 Пасхалка! Ты был выбран случайно. Получаешь +5 VKC!")
+        add_vkcoins(m.from_user.id, 5)
