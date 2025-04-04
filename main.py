@@ -89,12 +89,8 @@ def handle_message(message):
             bot.send_message(message.chat.id, "⚠️ Этот код уже использован.")
             return
 
-        payout_info = f"💰 Новая заявка:
-👤 @{message.from_user.username or message.from_user.first_name}
-🆔 {uid}
-📦 Сумма: {state['amount']}₽
-🔐 Код: {code}
-💳 Реквизиты: {message.text}"
+        payout_info = f"💰 Новая заявка:\\n👤 @{message.from_user.username or message.from_user.first_name}\\n🆔 {uid}\\n📦 Сумма: {state['amount']}₽\\n🔐 Код: {code}\\n💳 Реквизиты: {message.text}"
+
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{uid}_{code}"))
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
