@@ -112,5 +112,15 @@ def handle_message(message):
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
         bot.send_message(uid, "✅ Заявка принята!\n⏳ Ожидайте выплату в течение 1 часа.")
 
+# 🚀 Вот оно — важный маршрут для Webhook:
+@app.route('/', methods=['GET', 'POST'])
+def webhook():
+    if request.method == 'POST':
+        update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
+        bot.process_new_updates([update])
+        return "OK", 200
+    return "VK Cash бот работает!", 200
+
+# ⏺ Запуск Flask сервера
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
