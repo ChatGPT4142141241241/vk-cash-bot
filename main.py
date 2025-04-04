@@ -1,3 +1,4 @@
+
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask, request
@@ -6,7 +7,7 @@ import time
 import random
 
 API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
-ADMIN_ID = 6180147473  # Замени на свой ID
+ADMIN_ID = 6180147473
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
@@ -27,8 +28,7 @@ def send_start(message):
         InlineKeyboardButton("❓ FAQ", callback_data="faq"),
         InlineKeyboardButton("📋 Политика", callback_data="policy")
     )
-    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!
-Выбирай действие ниже:", reply_markup=markup)
+    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!\nВыбирай действие ниже:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data in ["free_spin", "paid_spin"])
 def handle_spin(call):
@@ -42,9 +42,7 @@ def handle_spin(call):
     else:
         amount = random.choice([0, 0, 100, 250, 500])
 
-    bot.send_message(call.message.chat.id, "🔄 Крутим колесо...
-🎯 [ 🍋 🍉 🍒 💰 🎲 ]
-🎯 [ 💣 🍒 💣 🍀 💰 ]")
+    bot.send_message(call.message.chat.id, "🔄 Крутим колесо...\n🎯 [ 🍋 🍉 🍒 💰 🎲 ]\n🎯 [ 💣 🍒 💣 🍀 💰 ]")
     time.sleep(2)
 
     if amount == 0:
@@ -52,22 +50,14 @@ def handle_spin(call):
     else:
         code = generate_code(amount)
         user_states[uid] = { "amount": amount, "code": code }
-        bot.send_message(call.message.chat.id, f"🎉 Ты получил {amount}₽!
-🎫 Код: `{code}`
-
-Отправь свои реквизиты для выплаты.", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"🎉 Ты получил {amount}₽!\n🎫 Код: `{code}`\n\nОтправь свои реквизиты для выплаты.", parse_mode="Markdown")
 
 @bot.message_handler(func=lambda m: True)
 def handle_message(message):
     uid = message.from_user.id
     if uid in user_states:
         state = user_states.pop(uid)
-        payout_info = f"💰 Новая заявка:
-👤 @{message.from_user.username or message.from_user.first_name}
-🆔 {uid}
-📦 Сумма: {state['amount']}₽
-🔐 Код: {state['code']}
-💳 Реквизиты: {message.text}"
+        payout_info = f"💰 Новая заявка:\n👤 @{message.from_user.username or message.from_user.first_name}\n🆔 {uid}\n📦 Сумма: {state['amount']}₽\n🔐 Код: {state['code']}\n💳 Реквизиты: {message.text}"
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{uid}"))
         bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
@@ -88,20 +78,9 @@ def handle_payment(call):
 @bot.callback_query_handler(func=lambda call: call.data in ["rules", "faq", "policy"])
 def handle_info(call):
     info = {
-        "rules": "📜 *Правила участия:*
-- Первая прокрутка — бесплатная
-- Повторная — 50₽
-- Суммы бонусов — от 50₽ до 500₽
-- После оплаты — случайный результат",
-        "faq": "❓ *FAQ:*
-- *Как сыграть?* Нажми 'Крутить'
-- *Как снова сыграть?* Нажми 'Попробовать снова за 50₽'
-- *Как получить бонус?* Забери код и отправь реквизиты",
-        "policy": "📋 *Политика:*
-- Проект — развлекательный
-- Результаты случайны
-- Возврата нет
-- Участие добровольное"
+        "rules": "📜 *Правила участия:*\n- Первая прокрутка — бесплатная\n- Повторная — 50₽\n- Суммы бонусов — от 50₽ до 500₽\n- После оплаты — случайный результат",
+        "faq": "❓ *FAQ:*\n- *Как сыграть?* Нажми 'Крутить'\n- *Как снова сыграть?* Нажми 'Попробовать снова за 50₽'\n- *Как получить бонус?* Забери код и отправь реквизиты",
+        "policy": "📋 *Политика:*\n- Проект — развлекательный\n- Результаты случайны\n- Возврата нет\n- Участие добровольное"
     }
     bot.send_message(call.message.chat.id, info[call.data], parse_mode="Markdown")
 
