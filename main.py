@@ -5,8 +5,8 @@ import re
 import time
 import random
 
-API_TOKEN = 'YOUR_API_TOKEN'
-ADMIN_ID = 123456789  # Замени на свой ID
+API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
+ADMIN_ID = 6180147473  # Замени на свой ID
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
