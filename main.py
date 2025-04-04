@@ -46,7 +46,7 @@ def handle_spin(call):
 🎯 [ 🍋 🍉 🍒 💰 🎲 ]
 🎯 [ 💣 🍒 💣 🍀 💰 ]")
     time.sleep(2)
-    
+
     if amount == 0:
         bot.send_message(call.message.chat.id, "❌ Увы, ничего не выпало. Попробуй снова!")
     else:
