@@ -130,13 +130,16 @@ def approve_payment(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "shop")
 def handle_shop(call):
-    bot.send_message(call.message.chat.id, "🛍 Скоро вы сможете тратить VKC на:
-– Бусты удачи
-– Аватары и ранги
-– Подарки друзьям
-– Ивенты и конкурсы
-– Вывод в бонусном режиме
-– VIP-доступ")
+    text = (
+        "🛍 Скоро вы сможете тратить VKC на:\n"
+        "– Бусты удачи\n"
+        "– Аватары и ранги\n"
+        "– Подарки друзьям\n"
+        "– Ивенты и конкурсы\n"
+        "– Вывод в бонусном режиме\n"
+        "– VIP-доступ"
+    )
+    bot.send_message(call.message.chat.id, text)
 
 @bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
 def handle_leaderboard(call):
