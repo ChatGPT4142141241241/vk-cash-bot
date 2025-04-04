@@ -231,3 +231,37 @@ def buy_retry(call):
         bot.send_message(uid, "❌ Недостаточно VK Coins.")
 
 
+
+
+# Добавим кнопки команд в /start
+@bot.message_handler(commands=['start'])
+def send_start(message):
+    markup = InlineKeyboardMarkup()
+    markup.row(
+        InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"),
+        InlineKeyboardButton("🛍 Магазин", callback_data="shop")
+    )
+    markup.row(
+        InlineKeyboardButton("🏆 Лидерборд", callback_data="leaderboard")
+    )
+    markup.row(
+        InlineKeyboardButton("📜 Правила", callback_data="rules"),
+        InlineKeyboardButton("❓ FAQ", callback_data="faq"),
+        InlineKeyboardButton("📋 Политика", callback_data="policy")
+    )
+    if message.from_user.id == ADMIN_ID:
+        markup.row(InlineKeyboardButton("👑 Админ-панель", callback_data="admin_panel"))
+    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash! Выбирай действие ниже:", reply_markup=markup)
+
+# Добавим обработку callback кнопок
+@bot.callback_query_handler(func=lambda call: call.data == "shop")
+def cb_shop(call):
+    shop(call.message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
+def cb_leaderboard(call):
+    leaderboard(call.message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "admin_panel")
+def cb_admin(call):
+    admin_panel(call.message)
