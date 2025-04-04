@@ -128,6 +128,35 @@ def approve_payment(call):
     bot.send_message(uid, "✅ Оплата подтверждена! Теперь вы можете крутить колесо повторно.", reply_markup=get_main_markup(uid))
     bot.send_message(call.message.chat.id, "Оплата для игрока подтверждена.")
 
+@bot.callback_query_handler(func=lambda call: call.data == "shop")
+def handle_shop(call):
+    bot.send_message(call.message.chat.id, "🛍 Скоро вы сможете тратить VKC на:
+– Бусты удачи
+– Аватары и ранги
+– Подарки друзьям
+– Ивенты и конкурсы
+– Вывод в бонусном режиме
+– VIP-доступ")
+
+@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
+def handle_leaderboard(call):
+    bot.send_message(call.message.chat.id, "⚡ ТОП-5 участников за 24ч:\n1. @username1 — 250₽\n2. @username2 — 200₽\n3. @username3 — 150₽\n4. @username4 — 100₽\n5. @username5 — 50₽\n\nИграй и попади в список! Обновление ежедневно.")
+
+@bot.callback_query_handler(func=lambda call: call.data == "rules")
+def handle_rules(call):
+    text = "📜 *Правила:*\n1. Бесплатная прокрутка — 1 раз.\n2. Выигрыш по коду.\n3. Мошенничество — бан.\n4. Повтор — после оплаты.\n5. Один аккаунт на человека.\n6. Уважаем честную игру."
+    bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
+
+@bot.callback_query_handler(func=lambda call: call.data == "faq")
+def handle_faq(call):
+    text = "❓ *FAQ:*\n– VKC — рулетка с шансами.\n– Старт — кнопка 'Крутить бесплатно'.\n– Повтор — только после оплаты.\n– Ввод реквизитов — после выигрыша.\n– Кто может? Любой с кошельком.\n– Частота — 1 раз бесплатно, дальше платно."
+    bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
+
+@bot.callback_query_handler(func=lambda call: call.data == "policy")
+def handle_policy(call):
+    text = "📋 *Политика:*\n1. Храним только ID и коды.\n2. Информация — анонимна.\n3. Реквизиты — только для выплат.\n4. Доступа к Telegram нет.\n5. Развлекательный проект.\n6. Согласие — при использовании."
+    bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
+
 @app.route('/', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'POST':
