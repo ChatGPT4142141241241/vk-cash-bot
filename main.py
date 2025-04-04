@@ -148,5 +148,38 @@ def webhook():
         return 'OK', 200
     return 'Bot is running!', 200
 
+@bot.callback_query_handler(func=lambda call: call.data in ["rules", "faq", "policy"])
+def handle_info(call):
+    info = {
+        "rules": "📜 *Правила участия:*\n- Первая прокрутка — бесплатная\n- Повторная — вручную после доната\n- Суммы бонусов — от 50₽ до 500₽\n- После оплаты — случайный результат",
+        "faq": "❓ *FAQ:*\n- *Как сыграть?* Нажми 'Крутить'\n- *Как снова сыграть?* Пока вручную, жди обновлений\n- *Как получить бонус?* Забери код и отправь реквизиты",
+        "policy": "📋 *Политика:*\n- Проект — развлекательный\n- Результаты случайны\n- Возврата нет\n- Участие добровольное"
+    }
+    bot.send_message(call.message.chat.id, info[call.data], parse_mode="Markdown")
+
+@bot.callback_query_handler(func=lambda call: call.data in ["admin_codes", "admin_download", "admin_stats"])
+def handle_admin_actions(call):
+    if call.from_user.id != ADMIN_ID:
+        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
+        return
+
+    if call.data == "admin_codes":
+        with open(CODES_FILE, "r") as f:
+            codes = json.load(f)
+        text = "\n".join([f"{code} — {data['amount']}₽ — {'✅' if data['used'] else '🕓'}" for code, data in codes.items()])
+        bot.send_message(call.message.chat.id, f"📦 Активные коды:\n{text[:4000]}")
+
+    elif call.data == "admin_download":
+        with open(CODES_FILE, "rb") as f:
+            bot.send_document(call.message.chat.id, f)
+
+    elif call.data == "admin_stats":
+        with open(CODES_FILE, "r") as f:
+            codes = json.load(f)
+        total = len(codes)
+        used = sum(1 for x in codes.values() if x['used'])
+        pending = total - used
+        bot.send_message(call.message.chat.id, f"📊 Статистика:\nВсего кодов: {total}\nВыплачено: {used}\nОжидают: {pending}")
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
