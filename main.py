@@ -14,7 +14,7 @@ app = Flask(__name__)
 user_states = {}
 first_spin_done = {}
 payment_requested = {}
-payment_pending = {}  # user_id -> {'code': str}
+payment_pending = {}
 
 CODES_FILE = "codes.json"
 
@@ -42,7 +42,7 @@ def get_main_markup(user_id):
     if not first_spin_done.get(user_id):
         markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
     elif user_id in payment_pending:
-        pass  # ничего, ждём подтверждение от админа
+        pass
     else:
         markup.add(InlineKeyboardButton("💵 Оплатить повторную прокрутку 50₽", callback_data="pay50"))
         if payment_requested.get(user_id):
@@ -58,7 +58,8 @@ def get_main_markup(user_id):
 
 @bot.message_handler(commands=['start'])
 def send_start(message):
-    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!\nВыбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
+    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!
+Выбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
 
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_spin(call):
@@ -71,7 +72,8 @@ def handle_spin(call):
     elif uid in payment_pending:
         del payment_pending[uid]
     amount = 50
-    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
+    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...
+[ 🎰 🎰 🎰 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍋 🍒 💣 ]")
     time.sleep(1)
