@@ -1,8 +1,6 @@
-
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from flask import Flask, request
-import re
 import time
 import random
 import json
@@ -48,17 +46,6 @@ def add_vkcoins(user_id, amount):
     with open(VKCOIN_FILE, "w") as f:
         json.dump(coins, f, indent=4)
 
-def get_leaderboard(top_n=5):
-    with open(CODES_FILE, "r") as f:
-        codes = json.load(f)
-    stats = {}
-    for code, data in codes.items():
-        if data["used"]:
-            uid = data["user_id"]
-            stats[uid] = stats.get(uid, 0) + data["amount"]
-    sorted_stats = sorted(stats.items(), key=lambda x: x[1], reverse=True)
-    return sorted_stats[:top_n]
-
 def get_main_markup(user_id):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
@@ -74,8 +61,7 @@ def get_main_markup(user_id):
 
 @bot.message_handler(commands=['start'])
 def send_start(message):
-    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!
-Выбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
+    bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!\nВыбирай действие ниже:", reply_markup=get_main_markup(message.from_user.id))
 
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_spin(call):
@@ -85,8 +71,7 @@ def handle_spin(call):
         return
     first_spin_done[uid] = True
     amount = 50
-    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...
-[ 🎰 🎰 🎰 ]")
+    msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍋 🍒 💣 ]")
     time.sleep(1)
