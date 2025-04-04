@@ -181,5 +181,38 @@ def handle_admin_actions(call):
         pending = total - used
         bot.send_message(call.message.chat.id, f"📊 Статистика:\nВсего кодов: {total}\nВыплачено: {used}\nОжидают: {pending}")
 
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    uid = message.from_user.id
+    if uid in user_states:
+        state = user_states.pop(uid)
+        code = state["code"]
+        with open(CODES_FILE, "r") as f:
+            codes = json.load(f)
+        if code not in codes:
+            bot.send_message(uid, "❌ Код не найден. Попробуйте сначала.")
+            return
+        if codes[code]["used"]:
+            bot.send_message(uid, "⚠️ Этот код уже использован.")
+            return
+        if codes[code]["user_id"] != uid:
+            bot.send_message(uid, "⛔ Этот код не принадлежит вам.")
+            return
+
+        payout_info = (
+            f"💰 Новая заявка от @{message.from_user.username or message.from_user.first_name}:\n"
+            f"🆔 ID: {uid}\n"
+            f"🔐 Код: {code}\n"
+            f"📦 Сумма: {state['amount']}₽\n"
+            f"💳 Реквизиты: {message.text}"
+        )
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("💸 Выплатить", callback_data=f"pay_{uid}_{code}"))
+        bot.send_message(ADMIN_ID, payout_info, reply_markup=markup)
+
+        bot.send_message(uid, "✅ Заявка принята!\n⏳ Ожидайте выплату в течение 1 часа.")
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
