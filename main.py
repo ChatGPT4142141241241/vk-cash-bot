@@ -133,6 +133,12 @@ def handle_pay(call):
     bot.send_message(uid, "💳 Переведи 50₽ на ЮMoney: `4100119077541618`\nПосле оплаты нажми кнопку ниже.", parse_mode="Markdown",
                      reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("✅ Я оплатил", callback_data="paid")))
 
+@bot.message_handler(commands=['pay'])
+def command_pay(message):
+    uid = message.from_user.id
+    payment_pending.add(uid)
+    bot.send_message(uid, "💳 Переведи 50₽ на ЮMoney: `4100119077541618`\nПосле оплаты нажми кнопку ниже.", parse_mode="Markdown",
+                     reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("✅ Я оплатил", callback_data="paid")))
 @bot.callback_query_handler(func=lambda call: call.data == "paid")
 def handle_paid(call):
     uid = call.from_user.id
