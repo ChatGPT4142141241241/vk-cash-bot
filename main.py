@@ -7,8 +7,8 @@ import random
 import json
 import os
 
-API_TOKEN = 'YOUR_API_TOKEN_HERE'
-ADMIN_ID = 123456789  # <-- ЗАМЕНИ на свой Telegram user ID
+API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
+ADMIN_ID = 6180147473  # <-- ЗАМЕНИ на свой Telegram user ID
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
