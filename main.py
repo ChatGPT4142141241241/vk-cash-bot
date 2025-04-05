@@ -15,6 +15,7 @@ user_states = {}
 first_spin_done = {}
 payment_requested = {}
 payment_pending = {}
+payment_approved = {}
 
 CODES_FILE = "codes.json"
 
@@ -41,8 +42,8 @@ def get_main_markup(user_id):
     markup = InlineKeyboardMarkup()
     if not first_spin_done.get(user_id):
         markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
-    elif user_id in payment_pending:
-        pass
+    elif payment_approved.get(user_id):
+        markup.add(InlineKeyboardButton("🎯 Крутить колесо", callback_data="free_spin"))
     else:
         markup.add(InlineKeyboardButton("💵 Оплатить повторную прокрутку 50₽", callback_data="pay50"))
         if payment_requested.get(user_id):
@@ -67,13 +68,13 @@ def send_start(message):
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_spin(call):
     uid = call.from_user.id
-    if first_spin_done.get(uid) and uid not in payment_pending:
+    if first_spin_done.get(uid) and not payment_approved.get(uid):
         bot.answer_callback_query(call.id, "Вы уже использовали бесплатную попытку.")
         return
     if not first_spin_done.get(uid):
         first_spin_done[uid] = True
-    elif uid in payment_pending:
-        del payment_pending[uid]
+    elif payment_approved.get(uid):
+        payment_approved[uid] = False
     amount = 50
     msg = bot.send_message(call.message.chat.id, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
     time.sleep(1)
@@ -125,8 +126,23 @@ def handle_payment_code(message):
 def approve_payment(call):
     uid = int(call.data.split("_")[1])
     payment_pending.pop(uid, None)
+    payment_approved[uid] = True
     bot.send_message(uid, "✅ Оплата подтверждена! Теперь вы можете крутить колесо повторно.", reply_markup=get_main_markup(uid))
     bot.send_message(call.message.chat.id, "Оплата для игрока подтверждена.")
+
+@bot.callback_query_handler(func=lambda call: call.data == "admin")
+def handle_admin_panel(call):
+    if call.from_user.id != ADMIN_ID:
+        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
+        return
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("📬 Просмотр заявок", callback_data="admin_requests"))
+    markup.add(InlineKeyboardButton("🔍 Проверка кодов", callback_data="admin_check"))
+    markup.add(InlineKeyboardButton("📜 История побед", callback_data="admin_history"))
+    markup.add(InlineKeyboardButton("🔓 Разблокировка", callback_data="admin_unlock"))
+    markup.add(InlineKeyboardButton("🎁 Выдать бонус", callback_data="admin_bonus"))
+    markup.add(InlineKeyboardButton("📊 Статистика", callback_data="admin_stats"))
+    bot.send_message(call.message.chat.id, "👑 Админ-панель:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data == "shop")
 def handle_shop(call):
