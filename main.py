@@ -5,8 +5,11 @@ import time
 import random
 import json
 import os
+import threading
+import requests
 
 API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
+WEBHOOK_URL = 'https://vk-cash-bot.onrender.com'
 ADMIN_ID = 6180147473
 
 bot = telebot.TeleBot(API_TOKEN)
@@ -197,6 +200,18 @@ def handle_requisites(message):
             bot.send_message(ADMIN_ID, f"Новая заявка от @{message.from_user.username or uid}:\nКод: {code}\nСумма: {state['amount']}₽\nРеквизиты: {message.text}")
             bot.send_message(uid, "✅ Заявка отправлена! Ожидай выплату.")
 
+# Webhook auto-check
+def check_and_reset_webhook():
+    try:
+        response = requests.get(f"https://api.telegram.org/bot{API_TOKEN}/getWebhookInfo")
+        result = response.json()
+        if result.get("result", {}).get("url") != WEBHOOK_URL:
+            requests.get(f"https://api.telegram.org/bot{API_TOKEN}/setWebhook?url={WEBHOOK_URL}")
+    except Exception as e:
+        print("Ошибка при проверке webhook:", e)
+    finally:
+        threading.Timer(1800, check_and_reset_webhook).start()
+
 @app.route('/', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'POST':
@@ -215,4 +230,5 @@ if __name__ == '__main__':
         BotCommand("policy", "Политика"),
         BotCommand("admin", "Админ-панель")
     ])
+    check_and_reset_webhook()
     app.run(host='0.0.0.0', port=8080)
