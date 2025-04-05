@@ -56,9 +56,9 @@ def command_rules(message):
 
 @bot.message_handler(commands=['leaderboard'])
 def command_leaderboard(message):
-    fake_users = [f"@winner{random.randint(1000,9999)}" for _ in range(5)]
+    usernames = ["@lucky_fox", "@spinmaster22", "@richbee", "@coincrazy", "@vegasowl"]
     text = "🏆 Топ участников:\n"
-    for i, user in enumerate(fake_users, 1):
+    for i, user in enumerate(usernames, 1):
         text += f"{i}. {user} — {random.choice([50,100,150,200])}₽\n"
     bot.send_message(message.chat.id, text)
 
