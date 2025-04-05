@@ -87,6 +87,27 @@ def command_admin(message):
     stats = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
     bot.send_message(message.chat.id, stats + "\n\n" + text[:4000])
 
+# Callbacks for inline buttons that reuse command logic
+@bot.callback_query_handler(func=lambda call: call.data == "rules")
+def handle_rules(call):
+    command_rules(call.message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
+def handle_leaderboard(call):
+    command_leaderboard(call.message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "faq")
+def handle_faq(call):
+    command_faq(call.message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "policy")
+def handle_policy(call):
+    command_policy(call.message)
+
+@bot.callback_query_handler(func=lambda call: call.data == "admin")
+def handle_admin(call):
+    command_admin(call.message)
+
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
     uid = call.from_user.id
