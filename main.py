@@ -1,5 +1,5 @@
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from flask import Flask, request
 import time
 import random
@@ -59,6 +59,10 @@ def get_main_markup(user_id):
 
 @bot.message_handler(commands=['start'])
 def send_start(message):
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(KeyboardButton("🎁 Крутить"), KeyboardButton("💵 Оплатить 50₽"))
+    if message.from_user.id == ADMIN_ID:
+        keyboard.add(KeyboardButton("👑 Панель админа"))
     bot.send_message(
         message.chat.id,
         "🎰 Добро пожаловать в VK Cash!\nВыбирай действие ниже:",
@@ -100,7 +104,7 @@ def handle_payment(call):
     payment_requested[uid] = True
     bot.send_message(
         call.message.chat.id,
-        "💸 Переведите 50₽ на ЮMoney: `4100119077541618`\nНазвание: *Плачу значит верчу*",
+        "💸 Переведите 50₽ на ЮMoney: `4100119077541618`\nНазвание: *Плачу значит верчу*\nПосле оплаты нажмите 'Я оплатил' и введите код подтверждения.",
         parse_mode="Markdown",
         reply_markup=get_main_markup(uid)
     )
@@ -108,7 +112,7 @@ def handle_payment(call):
 @bot.callback_query_handler(func=lambda call: call.data == "confirm_payment")
 def handle_confirm(call):
     uid = call.from_user.id
-    bot.send_message(call.message.chat.id, "🧾 Введите код оплаты (например: OP-1234):")
+    bot.send_message(call.message.chat.id, "🧾 Введите код подтверждения оплаты (например: OP-1234):")
     bot.register_next_step_handler(call.message, handle_payment_code)
 
 def handle_payment_code(message):
@@ -128,7 +132,7 @@ def approve_payment(call):
     payment_pending.pop(uid, None)
     payment_approved[uid] = True
     bot.send_message(uid, "✅ Оплата подтверждена! Теперь вы можете крутить колесо повторно.", reply_markup=get_main_markup(uid))
-    bot.send_message(call.message.chat.id, "Оплата для игрока подтверждена.")
+    bot.send_message(call.message.chat.id, "✅ Оплата подтверждена для игрока.")
 
 @bot.callback_query_handler(func=lambda call: call.data == "admin")
 def handle_admin_panel(call):
