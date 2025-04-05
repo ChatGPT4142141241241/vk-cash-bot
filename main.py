@@ -1,7 +1,6 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from flask import Flask, request
-import re
 import time
 import random
 import json
@@ -12,10 +11,11 @@ ADMIN_ID = 6180147473
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
+
 user_states = {}
 payment_pending = set()
-first_spin_done = {}
 payment_review = {}
+first_spin_done = {}
 
 CODES_FILE = "codes.json"
 
@@ -95,7 +95,9 @@ def handle_payment_proof(message):
             InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_{uid}")
         )
         bot.forward_message(ADMIN_ID, uid, message.message_id)
-        bot.send_message(ADMIN_ID, f"Платёж от ID: {uid}", reply_markup=markup)
+        code_info = user_states.get(uid, {})
+        extra = f"Код: {code_info.get('code')}\nСумма: {code_info.get('amount')}₽" if code_info else "(нет данных)"
+        bot.send_message(ADMIN_ID, f"Платёж от ID: {uid}\n{extra}", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
 def confirm_payment(call):
@@ -148,11 +150,15 @@ def handle_admin(call):
         return
     with open(CODES_FILE) as f:
         codes = json.load(f)
+    text = "🗂️ Активные коды:\n"
+    for code, data in codes.items():
+        status = "✅" if data['used'] else "🕓"
+        text += f"{status} {code} — {data['amount']}₽ — ID: {data['user_id']}\n"
     used = sum(1 for c in codes.values() if c['used'])
     pending = sum(1 for c in codes.values() if not c['used'])
     total = len(codes)
-    text = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
-    bot.send_message(call.message.chat.id, text)
+    stats = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
+    bot.send_message(call.message.chat.id, stats + "\n\n" + text[:4000])
 
 @bot.message_handler(func=lambda m: True)
 def handle_requisites(message):
@@ -181,6 +187,10 @@ if __name__ == '__main__':
     bot.set_my_commands([
         BotCommand("start", "Запустить бота"),
         BotCommand("pay", "Оплатить 50₽"),
-        BotCommand("rules", "Посмотреть правила")
+        BotCommand("rules", "Посмотреть правила"),
+        BotCommand("leaderboard", "Топ участников"),
+        BotCommand("faq", "FAQ по игре"),
+        BotCommand("policy", "Политика"),
+        BotCommand("admin", "Админ-панель")
     ])
     app.run(host='0.0.0.0', port=8080)
