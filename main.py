@@ -87,26 +87,16 @@ def command_admin(message):
     stats = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
     bot.send_message(message.chat.id, stats + "\n\n" + text[:4000])
 
-# Callbacks for inline buttons that reuse command logic
-@bot.callback_query_handler(func=lambda call: call.data == "rules")
-def handle_rules(call):
-    command_rules(call.message)
-
-@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
-def handle_leaderboard(call):
-    command_leaderboard(call.message)
-
-@bot.callback_query_handler(func=lambda call: call.data == "faq")
-def handle_faq(call):
-    command_faq(call.message)
-
-@bot.callback_query_handler(func=lambda call: call.data == "policy")
-def handle_policy(call):
-    command_policy(call.message)
-
-@bot.callback_query_handler(func=lambda call: call.data == "admin")
-def handle_admin(call):
-    command_admin(call.message)
+@bot.callback_query_handler(func=lambda call: call.data in ["rules", "leaderboard", "faq", "policy", "admin"])
+def handle_common_callbacks(call):
+    commands = {
+        "rules": command_rules,
+        "leaderboard": command_leaderboard,
+        "faq": command_faq,
+        "policy": command_policy,
+        "admin": command_admin
+    }
+    commands[call.data](call.message)
 
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
@@ -139,6 +129,7 @@ def command_pay(message):
     payment_pending.add(uid)
     bot.send_message(uid, "💳 Переведи 50₽ на ЮMoney: `4100119077541618`\nПосле оплаты нажми кнопку ниже.", parse_mode="Markdown",
                      reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("✅ Я оплатил", callback_data="paid")))
+
 @bot.callback_query_handler(func=lambda call: call.data == "paid")
 def handle_paid(call):
     uid = call.from_user.id
@@ -172,6 +163,14 @@ def confirm_payment(call):
         payment_pending.discard(uid)
         payment_review.pop(uid)
         first_spin_done[uid] = False
+        with open(CODES_FILE) as f:
+            codes = json.load(f)
+        for code, data in codes.items():
+            if data["user_id"] == uid and not data["used"]:
+                data["used"] = True
+                break
+        with open(CODES_FILE, "w") as f:
+            json.dump(codes, f, indent=4)
         bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо.")
         bot.edit_message_text("✅ Подтверждено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
 
@@ -195,9 +194,6 @@ def handle_requisites(message):
         with open(CODES_FILE) as f:
             codes = json.load(f)
         if code in codes and not codes[code]['used']:
-            codes[code]['used'] = True
-            with open(CODES_FILE, "w") as f:
-                json.dump(codes, f, indent=4)
             bot.send_message(ADMIN_ID, f"Новая заявка от @{message.from_user.username or uid}:\nКод: {code}\nСумма: {state['amount']}₽\nРеквизиты: {message.text}")
             bot.send_message(uid, "✅ Заявка отправлена! Ожидай выплату.")
 
