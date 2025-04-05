@@ -8,13 +8,14 @@ import json
 import os
 
 API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
-ADMIN_ID = 6180147473  # <-- ЗАМЕНИ на свой Telegram user ID
+ADMIN_ID = 6180147473
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
 user_states = {}
 payment_pending = set()
 first_spin_done = {}
+payment_review = {}
 
 CODES_FILE = "codes.json"
 
@@ -38,7 +39,9 @@ def get_main_markup(user_id):
     markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
     markup.add(InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay"))
     markup.add(InlineKeyboardButton("🏆 Топ", callback_data="leaderboard"))
-    markup.add(InlineKeyboardButton("📜 Правила", callback_data="rules"))
+    markup.add(InlineKeyboardButton("📜 Правила", callback_data="rules"),
+               InlineKeyboardButton("❓ FAQ", callback_data="faq"))
+    markup.add(InlineKeyboardButton("📋 Политика", callback_data="policy"))
     if user_id == ADMIN_ID:
         markup.add(InlineKeyboardButton("👑 Админ-панель", callback_data="admin"))
     return markup
@@ -54,7 +57,11 @@ def handle_free_spin(call):
         bot.answer_callback_query(call.id, "❌ Бесплатная попытка уже использована.")
         return
     first_spin_done[uid] = True
-    bot.send_message(uid, "🔄 Крутим колесо...")
+    msg = bot.send_message(uid, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
+    time.sleep(1)
+    bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍒 💣 🍋 ]")
+    time.sleep(1)
+    bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍉 ]")
     time.sleep(1)
     amount = 50
     code = generate_code(amount, uid)
@@ -80,11 +87,38 @@ def handle_paid(call):
 def handle_payment_proof(message):
     uid = message.from_user.id
     if uid in payment_pending:
-        payment_pending.remove(uid)
-        first_spin_done[uid] = False
-        bot.send_message(uid, "✅ Оплата принята! Можешь снова крутить колесо.")
-        # optionally, forward the proof to admin:
+        payment_review[uid] = message.message_id
+        bot.send_message(uid, "📩 Скрин отправлен на проверку. Ожидай подтверждение от администратора.")
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("✅ Подтвердить", callback_data=f"confirm_{uid}"),
+            InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_{uid}")
+        )
         bot.forward_message(ADMIN_ID, uid, message.message_id)
+        bot.send_message(ADMIN_ID, f"Платёж от ID: {uid}", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
+def confirm_payment(call):
+    if call.from_user.id != ADMIN_ID:
+        return
+    uid = int(call.data.split("_")[1])
+    if uid in payment_review:
+        payment_pending.discard(uid)
+        payment_review.pop(uid)
+        first_spin_done[uid] = False
+        bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо.")
+        bot.edit_message_text("✅ Подтверждено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
+def reject_payment(call):
+    if call.from_user.id != ADMIN_ID:
+        return
+    uid = int(call.data.split("_")[1])
+    if uid in payment_review:
+        payment_pending.discard(uid)
+        payment_review.pop(uid)
+        bot.send_message(uid, "❌ Оплата отклонена. Повтори попытку или свяжись с админом.")
+        bot.edit_message_text("❌ Отклонено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 @bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
 def handle_leaderboard(call):
@@ -96,8 +130,16 @@ def handle_leaderboard(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "rules")
 def handle_rules(call):
-    text = "📜 Правила:\n- Первая прокрутка бесплатна и всегда даёт 50₽\n- Повторные прокрутки — после оплаты 50₽\n- Выигрыш случайный, шансы низкие\n- Скрин оплаты обязателен"
+    text = "📜 Правила:\n- Первая прокрутка бесплатна\n- Повторные прокрутки — после оплаты 50₽\n- Выигрыш случайный, шансы низкие\n- Скрин оплаты обязателен"
     bot.send_message(call.message.chat.id, text)
+
+@bot.callback_query_handler(func=lambda call: call.data == "faq")
+def handle_faq(call):
+    bot.send_message(call.message.chat.id, "❓ FAQ:\n- Как начать? Нажми 'Крутить бесплатно'\n- Как снова играть? Оплати 50₽ и отправь скрин\n- Когда будет выплата? В течение 1 часа после подтверждения")
+
+@bot.callback_query_handler(func=lambda call: call.data == "policy")
+def handle_policy(call):
+    bot.send_message(call.message.chat.id, "📋 Политика:\n- Проект развлекательный\n- Результаты случайны\n- Возвратов нет\n- Участие добровольное")
 
 @bot.callback_query_handler(func=lambda call: call.data == "admin")
 def handle_admin(call):
