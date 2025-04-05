@@ -50,6 +50,43 @@ def get_main_markup(user_id):
 def send_start(message):
     bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!", reply_markup=get_main_markup(message.from_user.id))
 
+@bot.message_handler(commands=['rules'])
+def command_rules(message):
+    bot.send_message(message.chat.id, "📜 Правила:\n- Первая прокрутка бесплатна\n- Повторные прокрутки — после оплаты 50₽\n- Выигрыш случайный, шансы низкие\n- Скрин оплаты обязателен")
+
+@bot.message_handler(commands=['leaderboard'])
+def command_leaderboard(message):
+    fake_users = [f"@winner{random.randint(1000,9999)}" for _ in range(5)]
+    text = "🏆 Топ участников:\n"
+    for i, user in enumerate(fake_users, 1):
+        text += f"{i}. {user} — {random.choice([50,100,150,200])}₽\n"
+    bot.send_message(message.chat.id, text)
+
+@bot.message_handler(commands=['faq'])
+def command_faq(message):
+    bot.send_message(message.chat.id, "❓ FAQ:\n- Как начать? Нажми 'Крутить бесплатно'\n- Как снова играть? Оплати 50₽ и отправь скрин\n- Когда будет выплата? В течение 1 часа после подтверждения")
+
+@bot.message_handler(commands=['policy'])
+def command_policy(message):
+    bot.send_message(message.chat.id, "📋 Политика:\n- Проект развлекательный\n- Результаты случайны\n- Возвратов нет\n- Участие добровольное")
+
+@bot.message_handler(commands=['admin'])
+def command_admin(message):
+    if message.from_user.id != ADMIN_ID:
+        bot.send_message(message.chat.id, "⛔ Нет доступа.")
+        return
+    with open(CODES_FILE) as f:
+        codes = json.load(f)
+    text = "🗂️ Активные коды:\n"
+    for code, data in codes.items():
+        status = "✅" if data['used'] else "🕓"
+        text += f"{status} {code} — {data['amount']}₽ — ID: {data['user_id']}\n"
+    used = sum(1 for c in codes.values() if c['used'])
+    pending = sum(1 for c in codes.values() if not c['used'])
+    total = len(codes)
+    stats = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
+    bot.send_message(message.chat.id, stats + "\n\n" + text[:4000])
+
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
     uid = call.from_user.id
@@ -121,44 +158,6 @@ def reject_payment(call):
         payment_review.pop(uid)
         bot.send_message(uid, "❌ Оплата отклонена. Повтори попытку или свяжись с админом.")
         bot.edit_message_text("❌ Отклонено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
-
-@bot.callback_query_handler(func=lambda call: call.data == "leaderboard")
-def handle_leaderboard(call):
-    fake_users = [f"@winner{random.randint(1000,9999)}" for _ in range(5)]
-    text = "🏆 Топ участников:\n"
-    for i, user in enumerate(fake_users, 1):
-        text += f"{i}. {user} — {random.choice([50,100,150,200])}₽\n"
-    bot.send_message(call.message.chat.id, text)
-
-@bot.callback_query_handler(func=lambda call: call.data == "rules")
-def handle_rules(call):
-    text = "📜 Правила:\n- Первая прокрутка бесплатна\n- Повторные прокрутки — после оплаты 50₽\n- Выигрыш случайный, шансы низкие\n- Скрин оплаты обязателен"
-    bot.send_message(call.message.chat.id, text)
-
-@bot.callback_query_handler(func=lambda call: call.data == "faq")
-def handle_faq(call):
-    bot.send_message(call.message.chat.id, "❓ FAQ:\n- Как начать? Нажми 'Крутить бесплатно'\n- Как снова играть? Оплати 50₽ и отправь скрин\n- Когда будет выплата? В течение 1 часа после подтверждения")
-
-@bot.callback_query_handler(func=lambda call: call.data == "policy")
-def handle_policy(call):
-    bot.send_message(call.message.chat.id, "📋 Политика:\n- Проект развлекательный\n- Результаты случайны\n- Возвратов нет\n- Участие добровольное")
-
-@bot.callback_query_handler(func=lambda call: call.data == "admin")
-def handle_admin(call):
-    if call.from_user.id != ADMIN_ID:
-        bot.answer_callback_query(call.id, "⛔ Нет доступа.")
-        return
-    with open(CODES_FILE) as f:
-        codes = json.load(f)
-    text = "🗂️ Активные коды:\n"
-    for code, data in codes.items():
-        status = "✅" if data['used'] else "🕓"
-        text += f"{status} {code} — {data['amount']}₽ — ID: {data['user_id']}\n"
-    used = sum(1 for c in codes.values() if c['used'])
-    pending = sum(1 for c in codes.values() if not c['used'])
-    total = len(codes)
-    stats = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
-    bot.send_message(call.message.chat.id, stats + "\n\n" + text[:4000])
 
 @bot.message_handler(func=lambda m: True)
 def handle_requisites(message):
