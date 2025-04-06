@@ -188,7 +188,6 @@ def confirm_payment(call):
         markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🎯 Крутить", callback_data="free_spin"))
         bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо:", reply_markup=markup)
        
-bot.edit_message_text("✅ Подтверждено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
 def reject_payment(call):
