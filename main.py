@@ -130,10 +130,8 @@ def handle_pay(call):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("💳 Перейти к оплате", url="https://donate.stream/koleso_gelaniy_67f21aae98f41"))
     markup.add(InlineKeyboardButton("✅ Я оплатил", callback_data="paid"))
-    bot.send_message(uid, "💸 Перейди по ссылке ниже и оплати 50₽, затем нажми '✅ Я оплатил'", reply_markup=markup)
-
     
-    bot.send_message(uid,
+     bot.send_message(uid,
         "💳 Нажми «Перейти к оплате», чтобы оплатить 50₽ через Donatestream.\n\n"
         "После оплаты вернись и нажми «Я оплатил» для подтверждения.",
         reply_markup=markup
