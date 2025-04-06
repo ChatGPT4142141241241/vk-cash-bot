@@ -18,7 +18,6 @@ app = Flask(__name__)
 user_states = {}
 payment_pending = set()
 payment_review = {}
-first_spin_done = {}
 
 CODES_FILE = "codes.json"
 
@@ -39,7 +38,7 @@ def generate_code(amount, user_id):
 
 def get_main_markup(user_id):
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
+    markup.add(InlineKeyboardButton("🎯 Крутить", callback_data="free_spin"))
     markup.add(InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay"))
     markup.add(InlineKeyboardButton("🏆 Топ", callback_data="leaderboard"))
     markup.add(InlineKeyboardButton("📜 Правила", callback_data="rules"),
@@ -108,25 +107,6 @@ def command_admin(message):
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
     uid = call.from_user.id
-    count = get_spin_count(uid)
-    if count > 0 and uid not in payment_pending:
-        bot.answer_callback_query(call.id, "❌ Бесплатная попытка уже использована. Оплати 50₽, чтобы продолжить.")
-        return
-
-    msg = bot.send_message(uid, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
-    time.sleep(1)
-    bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍒 💣 🍋 ]")
-    time.sleep(1)
-    bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍉 ]")
-    time.sleep(1)
-
-    amount = determine_amount(uid)
-    increment_spin_count(uid)
-    code = generate_code(amount, uid)
-    user_states[uid] = {"amount": amount, "code": code}
-    bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
-
-    uid = call.from_user.id
     if first_spin_done.get(uid):
         bot.answer_callback_query(call.id, "❌ Бесплатная попытка уже использована.")
         return
@@ -188,7 +168,7 @@ def confirm_payment(call):
     if uid in payment_review:
         payment_pending.discard(uid)
         payment_review.pop(uid)
-        first_spin_done[uid] = False
+       
         with open(CODES_FILE) as f:
             codes = json.load(f)
         for code, data in codes.items():
@@ -197,7 +177,9 @@ def confirm_payment(call):
                 break
         with open(CODES_FILE, "w") as f:
             json.dump(codes, f, indent=4)
-        bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо.")
+        first_spin_done[uid] = False
+        markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🎯 Крутить", callback_data="free_spin"))
+        bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо:", reply_markup=markup)
         bot.edit_message_text("✅ Подтверждено.", chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
