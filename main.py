@@ -40,7 +40,7 @@ def generate_code(amount, user_id):
 def get_main_markup(user_id):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
-    markup.add(InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay"))
+    markup.add(InlineKeyboardButton("💸 Оплатить 50₽", url="https://donate.stream/koleso_gelaniy_67f21aae98f41"))
     markup.add(InlineKeyboardButton("🏆 Топ", callback_data="leaderboard"))
     markup.add(InlineKeyboardButton("📜 Правила", callback_data="rules"),
                InlineKeyboardButton("❓ FAQ", callback_data="faq"))
