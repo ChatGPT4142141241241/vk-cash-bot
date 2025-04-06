@@ -117,7 +117,6 @@ def handle_free_spin(call):
         bot.answer_callback_query(call.id, "❌ Сначала оплати, чтобы снова крутить.")
         return
 
-    increment_spin_count(uid)
     msg = bot.send_message(uid, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍒 💣 🍋 ]")
@@ -126,6 +125,7 @@ def handle_free_spin(call):
     time.sleep(1)
     
     amount = determine_amount(uid)
+    increment_spin_count(uid)
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     paid_users.discard(uid)
