@@ -10,6 +10,7 @@ import requests
 
 API_TOKEN = '8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU'
 ADMIN_ID = 6180147473
+WEBHOOK_URL = "https://vk-cash-bot.onrender.com"
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
@@ -52,6 +53,21 @@ def get_main_markup(user_id):
 def send_start(message):
     bot.send_message(message.chat.id, "🎰 Добро пожаловать в VK Cash!", reply_markup=get_main_markup(message.from_user.id))
 
+@bot.message_handler(commands=['pay'])
+def command_pay(message):
+    handle_pay(message)
+
+@bot.callback_query_handler(func=lambda call: call.data in ["rules", "leaderboard", "faq", "policy", "admin"])
+def handle_common_callbacks(call):
+    commands = {
+        "rules": command_rules,
+        "leaderboard": command_leaderboard,
+        "faq": command_faq,
+        "policy": command_policy,
+        "admin": command_admin
+    }
+    commands[call.data](call.message)
+
 @bot.message_handler(commands=['rules'])
 def command_rules(message):
     bot.send_message(message.chat.id, "📜 Правила:\n- Первая прокрутка бесплатна\n- Повторные прокрутки — после оплаты 50₽\n- Выигрыш случайный, шансы низкие\n- Скрин оплаты обязателен")
@@ -89,17 +105,6 @@ def command_admin(message):
     stats = f"📊 Статистика:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
     bot.send_message(message.chat.id, stats + "\n\n" + text[:4000])
 
-@bot.callback_query_handler(func=lambda call: call.data in ["rules", "leaderboard", "faq", "policy", "admin"])
-def handle_common_callbacks(call):
-    commands = {
-        "rules": command_rules,
-        "leaderboard": command_leaderboard,
-        "faq": command_faq,
-        "policy": command_policy,
-        "admin": command_admin
-    }
-    commands[call.data](call.message)
-
 @bot.callback_query_handler(func=lambda call: call.data == "free_spin")
 def handle_free_spin(call):
     uid = call.from_user.id
@@ -113,16 +118,17 @@ def handle_free_spin(call):
     time.sleep(1)
     bot.edit_message_text(chat_id=msg.chat.id, message_id=msg.message_id, text="[ 🍀 💰 🍉 ]")
     time.sleep(1)
-    amount = random.choice([0, 10, 25, 50, 100, 200, 500])
+    amount = 50  # фиксированная сумма для первой попытки
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: call.data == "pay")
-def handle_pay(call):
-    uid = call.from_user.id
+def handle_pay(call_or_message):
+    uid = call_or_message.from_user.id
     payment_pending.add(uid)
-    bot.send_message(uid, "💳 Переведи 50₽ на ЮMoney: `4100119077541618`\nПосле оплаты нажми кнопку ниже.", parse_mode="Markdown",
+    bot.send_message(uid, "💳 Переведи 50₽ на ЮMoney: `4100119077541618`\nПосле оплаты нажми кнопку ниже.",
+                     parse_mode="Markdown",
                      reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("✅ Я оплатил", callback_data="paid")))
 
 @bot.callback_query_handler(func=lambda call: call.data == "paid")
@@ -206,9 +212,9 @@ def check_webhook():
         if response.status_code == 200:
             result = response.json()
             current_url = result['result'].get('url', '')
-            if current_url != "https://vk-cash-bot.onrender.com":
+            if current_url != WEBHOOK_URL:
                 print("🔄 Webhook не совпадает, восстанавливаю...")
-                requests.get(f"https://api.telegram.org/bot{API_TOKEN}/setWebhook?url=https://vk-cash-bot.onrender.com")
+                requests.get(f"https://api.telegram.org/bot{API_TOKEN}/setWebhook?url={WEBHOOK_URL}")
             else:
                 print("✅ Webhook активен.")
         else:
