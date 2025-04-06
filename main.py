@@ -40,7 +40,10 @@ def generate_code(amount, user_id):
 def get_main_markup(user_id):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 Крутить бесплатно", callback_data="free_spin"))
-    markup.add(InlineKeyboardButton("💸 Оплатить 50₽", url="https://donate.stream/koleso_gelaniy_67f21aae98f41"))
+    markup.add(
+    InlineKeyboardButton("💸 Перейти к оплате", url="https://donate.stream/koleso_gelaniy_67f21aae98f41"),
+    InlineKeyboardButton("✅ Я оплатил", callback_data="paid")
+)
     markup.add(InlineKeyboardButton("🏆 Топ", callback_data="leaderboard"))
     markup.add(InlineKeyboardButton("📜 Правила", callback_data="rules"),
                InlineKeyboardButton("❓ FAQ", callback_data="faq"))
@@ -124,12 +127,22 @@ def handle_free_spin(call):
     bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: call.data == "pay")
-def handle_pay(call_or_message):
-    uid = call_or_message.from_user.id
+def handle_pay(call):
+    uid = call.from_user.id
     payment_pending.add(uid)
-    bot.send_message(uid, "💳 Переведи 50₽ на ЮMoney: `4100119077541618`\nПосле оплаты нажми кнопку ниже.",
-                     parse_mode="Markdown",
-                     reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("✅ Я оплатил", callback_data="paid")))
+    
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("💸 Перейти к оплате", url="https://donate.stream/koleso_gelaniy_67f21aae98f41"),
+        InlineKeyboardButton("✅ Я оплатил", callback_data="paid")
+    )
+    
+    bot.send_message(uid,
+        "💳 Нажми «Перейти к оплате», чтобы оплатить 50₽ через Donatestream.\n\n"
+        "После оплаты вернись и нажми «Я оплатил» для подтверждения.",
+        reply_markup=markup
+    )
+
 
 @bot.callback_query_handler(func=lambda call: call.data == "paid")
 def handle_paid(call):
