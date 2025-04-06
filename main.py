@@ -129,10 +129,11 @@ def handle_free_spin(call):
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     paid_users.discard(uid)
+       
     if amount == 0:
-    bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!")
-else:
-    bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
+        bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!")
+    else:
+        bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
 
     
 @bot.callback_query_handler(func=lambda call: call.data == "pay")
