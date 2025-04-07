@@ -129,9 +129,7 @@ def handle_free_spin(call):
     code = generate_code(amount, uid)
     user_states[uid] = {"amount": amount, "code": code}
     paid_users.discard(uid)
-       
-    # Общая кнопка оплаты
-pay_markup = InlineKeyboardMarkup().add(
+    pay_markup = InlineKeyboardMarkup().add(
     InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay")
 )
 
