@@ -130,10 +130,16 @@ def handle_free_spin(call):
     user_states[uid] = {"amount": amount, "code": code}
     paid_users.discard(uid)
        
-    if amount == 0:
-        bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!")
-    else:
-        bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown")
+    # Общая кнопка оплаты
+pay_markup = InlineKeyboardMarkup().add(
+    InlineKeyboardButton("💸 Оплатить 50₽", callback_data="pay")
+)
+
+if amount == 0:
+    bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!", reply_markup=pay_markup)
+else:
+    bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown", reply_markup=pay_markup)
+
 
     
 @bot.callback_query_handler(func=lambda call: call.data == "pay")
@@ -192,9 +198,21 @@ def confirm_payment(call):
                 break
         with open(CODES_FILE, "w") as f:
             json.dump(codes, f, indent=4)
+
         markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🎯 Крутить", callback_data="free_spin"))
         bot.send_message(uid, "✅ Оплата подтверждена! Можешь снова крутить колесо:", reply_markup=markup)
-       
+
+        # Отправляем статистику админу
+        with open(CODES_FILE) as f:
+            codes = json.load(f)
+        used = sum(1 for c in codes.values() if c['used'])
+        pending = sum(1 for c in codes.values() if not c['used'])
+        total = len(codes)
+        stats = f"📊 Статистика после подтверждения:\nВсего кодов: {total}\nОжидают: {pending}\nВыплачено: {used}"
+        bot.send_message(ADMIN_ID, f"☑️ Оплата от пользователя ID {uid} подтверждена.\n\n{stats}")
+
+
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
 def reject_payment(call):
