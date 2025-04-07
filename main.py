@@ -137,7 +137,7 @@ def handle_free_spin(call):
     if amount == 0:
         bot.send_message(uid, "😢 Увы, вы ничего не выиграли. Попробуйте ещё раз после оплаты!", reply_markup=pay_markup)
     else:
-        bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\nОтправь свои реквизиты:", parse_mode="Markdown", reply_markup=pay_markup)
+        bot.send_message(uid, f"🎉 ПОБЕДА {amount}₽!\nКод: `{code}`\n📥Отправь свои реквизиты ,номер карты,эл.кошелёк,СБП или иное-прямо в диалог боту: ИЛИ СЫГРАЙТЕ ЕЩЁ РАЗОК", parse_mode="Markdown", reply_markup=pay_markup)
 
 
     
