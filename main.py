@@ -249,17 +249,22 @@ def check_webhook():
         response = requests.get(f"https://api.telegram.org/bot{API_TOKEN}/getWebhookInfo")
         if response.status_code == 200:
             result = response.json()
-            current_url = result['result'].get('url', '')
-            if current_url != WEBHOOK_URL:
-                print("🔄 Webhook не совпадает, восстанавливаю...")
+            if not result['ok'] or result['result'].get('url') != WEBHOOK_URL:
+                print("🔄 Webhook сломался или не совпадает, восстанавливаю...")
                 requests.get(f"https://api.telegram.org/bot{API_TOKEN}/setWebhook?url={WEBHOOK_URL}")
+                print("✅ Webhook восстановлен.")
             else:
                 print("✅ Webhook активен.")
         else:
             print(f"⚠️ Ошибка запроса Webhook: {response.status_code}")
+            # Принудительно восстанавливаем webhook
+            requests.get(f"https://api.telegram.org/bot{API_TOKEN}/setWebhook?url={WEBHOOK_URL}")
     except Exception as e:
         print(f"💥 Ошибка при проверке Webhook: {e}")
-    threading.Timer(10, check_webhook).start()
+        # Восстанавливаем в случае ошибки
+        requests.get(f"https://api.telegram.org/bot{API_TOKEN}/setWebhook?url={WEBHOOK_URL}")
+    # Увеличиваем интервал до 30 секунд, чтобы не перегружать Telegram
+    threading.Timer(30, check_webhook).start()
 
 SPIN_HISTORY_FILE = "spin_history.json"
 
