@@ -19,43 +19,51 @@ VPN_CONFIG = (
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row("🔑 Получить конфиг", "❓ FAQ")
-    markup.row("💳 Купить доступ")
+    markup.row("🔑 Получить VPN", "📦 Инструкция")
+    markup.row("💳 Оплатить доступ")
     bot.send_message(message.chat.id,
-                     "Добро пожаловать в SokolVPN 🦅\n"
-                     "Защити свой трафик и облети блокировки!\n"
+                     "🦅 Добро пожаловать в *SokolVPN*!
+"
+                     "Твой зашифрованный туннель готов.
+"
                      "Выбери действие ниже:",
-                     reply_markup=markup)
+                     reply_markup=markup,
+                     parse_mode="Markdown")
 
-@bot.message_handler(func=lambda message: message.text == "🔑 Получить конфиг")
+@bot.message_handler(func=lambda message: message.text == "🔑 Получить VPN")
 def send_config(message):
     bot.send_message(message.chat.id, "Вот твой конфиг VLESS для v2rayNG:")
     bot.send_message(message.chat.id, f"`{VPN_CONFIG}`", parse_mode="Markdown")
-
     img = qrcode.make(VPN_CONFIG)
     bio = io.BytesIO()
-    bio.name = 'qrcode.png'
+    bio.name = 'sokolvpn_qr.png'
     img.save(bio, 'PNG')
     bio.seek(0)
     bot.send_photo(message.chat.id, photo=bio, caption="Сканируй QR в v2rayNG")
 
-@bot.message_handler(func=lambda message: message.text == "❓ FAQ")
+@bot.message_handler(func=lambda message: message.text == "📦 Инструкция")
 def send_faq(message):
     bot.send_message(message.chat.id,
-                     "❓ *Что такое SokolVPN?*\n"
-                     "- Это надёжный VPN на базе протокола VLESS с шифрованием Reality.\n\n"
-                     "📲 *Как пользоваться?*\n"
-                     "1. Скачай приложение v2rayNG\n"
-                     "2. Нажми на +, выбери импорт по QR или вставь конфиг вручную\n"
-                     "3. Подключайся и летай 🛡️",
+                     "📦 *Инструкция по подключению:*
+"
+                     "1. Скачай `v2rayNG` в Google Play
+"
+                     "2. Нажми ➕, выбери 'Импорт из QR' или 'Импорт из буфера'
+"
+                     "3. Подключайся и шифруйся 🔒",
                      parse_mode="Markdown")
 
-@bot.message_handler(func=lambda message: message.text == "💳 Купить доступ")
+@bot.message_handler(func=lambda message: message.text == "💳 Оплатить доступ")
 def send_payment(message):
     bot.send_message(message.chat.id,
-                     "💳 Оплати через Donat Stream: https://donate.stream/SokolVPN2025_67f21aae98f41\n"
-                     "После оплаты нажми /start и получи конфиг.\n"
-                     "_(оплата временно работает в ручном режиме)_",
+                     "💳 *Оплата доступа:*
+"
+                     "Перейди по ссылке и оплати 99₽:
+"
+                     "https://donate.stream/SokolVPN2025_67f21aae98f41
+
+"
+                     "После оплаты нажми /start, чтобы получить конфиг.",
                      parse_mode="Markdown")
 
 @server.route('/' + TOKEN, methods=['POST'])
@@ -63,7 +71,7 @@ def getMessage():
     json_str = request.get_data().decode('UTF-8')
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
-    return "!", 200
+    return "OK", 200
 
 @server.route("/")
 def webhook():
