@@ -1,11 +1,12 @@
 import telebot
 import qrcode
 import io
+from flask import Flask, request
 
 TOKEN = "8135081615:AAFHaG7cgRaNlBAAEk_ALEP0-wHYzOniYbU"
 bot = telebot.TeleBot(TOKEN)
+server = Flask(__name__)
 
-# Конфиг для подключения через v2rayNG
 VPN_CONFIG = (
     "vless://3f32f673-f64b-4fd5-92b4-94d534ebe5c9@80.74.26.34:54633"
     "?type=tcp&security=reality"
@@ -52,9 +53,23 @@ def send_faq(message):
 @bot.message_handler(func=lambda message: message.text == "💳 Купить доступ")
 def send_payment(message):
     bot.send_message(message.chat.id,
-                     "💳 Оплати через DonatPay: https://donatepay.ru/d/SokolVPN\n"
+                     "💳 Оплати через Donat Stream: https://donate.stream/SokolVPN2025_67f21aae98f41\n"
                      "После оплаты нажми /start и получи конфиг.\n"
                      "_(оплата временно работает в ручном режиме)_",
                      parse_mode="Markdown")
 
-bot.polling()
+@server.route('/' + TOKEN, methods=['POST'])
+def getMessage():
+    json_str = request.get_data().decode('UTF-8')
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return "!", 200
+
+@server.route("/")
+def webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url='https://sokolvpn.onrender.com/' + TOKEN)
+    return "Webhook установлен", 200
+
+if __name__ == "__main__":
+    server.run(host="0.0.0.0", port=10000)
