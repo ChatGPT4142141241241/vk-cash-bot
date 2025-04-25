@@ -21,14 +21,16 @@ def send_welcome(message):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row("🔑 Получить VPN", "📦 Инструкция")
     markup.row("💳 Оплатить доступ")
-    bot.send_message(message.chat.id,
-                     "🦅 Добро пожаловать в *SokolVPN*!
+    bot.send_message(
+        message.chat.id,
+        "🦅 Добро пожаловать в *SokolVPN!*
 "
-                     "Твой зашифрованный туннель готов.
+        "Твой зашифрованный туннель готов.
 "
-                     "Выбери действие ниже:",
-                     reply_markup=markup,
-                     parse_mode="Markdown")
+        "Выбери действие ниже:",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
 
 @bot.message_handler(func=lambda message: message.text == "🔑 Получить VPN")
 def send_config(message):
@@ -43,28 +45,32 @@ def send_config(message):
 
 @bot.message_handler(func=lambda message: message.text == "📦 Инструкция")
 def send_faq(message):
-    bot.send_message(message.chat.id,
-                     "📦 *Инструкция по подключению:*
+    bot.send_message(
+        message.chat.id,
+        "📦 *Инструкция по подключению:*
 "
-                     "1. Скачай `v2rayNG` в Google Play
+        "1. Скачай `v2rayNG` в Google Play
 "
-                     "2. Нажми ➕, выбери 'Импорт из QR' или 'Импорт из буфера'
+        "2. Нажми ➕, выбери 'Импорт из QR' или 'Импорт из буфера'
 "
-                     "3. Подключайся и шифруйся 🔒",
-                     parse_mode="Markdown")
+        "3. Подключайся и шифруйся 🔒",
+        parse_mode="Markdown"
+    )
 
 @bot.message_handler(func=lambda message: message.text == "💳 Оплатить доступ")
 def send_payment(message):
-    bot.send_message(message.chat.id,
-                     "💳 *Оплата доступа:*
+    bot.send_message(
+        message.chat.id,
+        "💳 *Оплата доступа:*
 "
-                     "Перейди по ссылке и оплати 99₽:
+        "Перейди по ссылке и оплати 99₽:
 "
-                     "https://donate.stream/SokolVPN2025_67f21aae98f41
+        "https://donate.stream/SokolVPN2025_67f21aae98f41
 
 "
-                     "После оплаты нажми /start, чтобы получить конфиг.",
-                     parse_mode="Markdown")
+        "После оплаты нажми /start, чтобы получить конфиг.",
+        parse_mode="Markdown"
+    )
 
 @server.route('/' + TOKEN, methods=['POST'])
 def getMessage():
